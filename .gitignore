@@ -1,0 +1,5 @@
+/etc/*
+!/etc/*example*.yaml
+/.idea
+/vendor
+docker-compose.yml
