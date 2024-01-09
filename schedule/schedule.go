@@ -8,11 +8,14 @@ import (
 	"github.com/chazari-x/hmtpk_schedule/config"
 	"github.com/chazari-x/hmtpk_schedule/model"
 	"github.com/chazari-x/hmtpk_schedule/redis"
+	"github.com/olebedev/when"
+	"github.com/olebedev/when/rules/ru"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Schedule struct {
@@ -65,7 +68,13 @@ func (s *Schedule) GetScheduleByGroup(group, date string) ([]model.Schedule, err
 
 	log.Trace(group)
 
-	if redisWeeklySchedule, err := s.r.Get(date + ":" + group); err == nil && redisWeeklySchedule != "" {
+	d, err := time.Parse("02.01.2006", date)
+	if err != nil {
+		return nil, err
+	}
+
+	year, week := d.ISOWeek()
+	if redisWeeklySchedule, err := s.r.Get(fmt.Sprintf("%d/%d", year, week) + ":" + group); err == nil && redisWeeklySchedule != "" {
 		if json.Unmarshal([]byte(redisWeeklySchedule), &weeklySchedule) == nil {
 			log.Trace("Данные получены из Redis")
 			return weeklySchedule, nil
@@ -93,10 +102,16 @@ func (s *Schedule) GetScheduleByGroup(group, date string) ([]model.Schedule, err
 	for scheduleElementNum := 2; scheduleElementNum <= 8; scheduleElementNum++ {
 		scheduleDateElement := doc.Children().Find(fmt.Sprintf("div.raspcontent.m5 div:nth-child(%d) div.panel-heading.edu_today > h2", scheduleElementNum))
 
-		scheduleDate := scheduleDateElement.Text()
+		w := when.New(nil)
+		w.Add(ru.All...)
+		r, err := w.Parse(strings.Split(scheduleDateElement.Text(), ",")[0], time.Now())
+		if err != nil {
+			return nil, err
+		}
+
 		weeklySchedule = append(weeklySchedule, model.Schedule{
-			Date: scheduleDate,
-			Href: fmt.Sprintf("https://hmtpk.ru/ru/students/schedule/?group=%s&date_edu1c=%s&send=Показать#current", group, scheduleDate),
+			Date: scheduleDateElement.Text(),
+			Href: fmt.Sprintf("https://hmtpk.ru/ru/students/schedule/?group=%s&date_edu1c=%s&send=Показать#current", group, r.Time.Format("02.01.2006")),
 		})
 
 		lessonsElement := doc.Children().Find(fmt.Sprintf("div.raspcontent.m5 div:nth-child(%d) div.panel-body > #mobile-friendly > tbody:nth-child(2)", scheduleElementNum))
@@ -154,7 +169,7 @@ func (s *Schedule) GetScheduleByGroup(group, date string) ([]model.Schedule, err
 	}
 
 	if marshal, err := json.Marshal(weeklySchedule); err == nil {
-		if err := s.r.Set(date+":"+group, string(marshal)); err != nil {
+		if err = s.r.Set(fmt.Sprintf("%d/%d", year, week)+":"+group, string(marshal)); err != nil {
 			log.Error(err)
 		} else {
 			log.Trace("Данные сохранены в Redis")
@@ -170,7 +185,13 @@ func (s *Schedule) GetScheduleByTeacher(teacher, date string) ([]model.Schedule,
 	log.Trace(teacher)
 
 	teacher = strings.ReplaceAll(teacher, " ", "+")
-	if redisWeeklySchedule, err := s.r.Get(date + ":" + teacher); err == nil && redisWeeklySchedule != "" {
+	d, err := time.Parse("02.01.2006", date)
+	if err != nil {
+		return nil, err
+	}
+
+	year, week := d.ISOWeek()
+	if redisWeeklySchedule, err := s.r.Get(fmt.Sprintf("%d/%d", year, week) + ":" + teacher); err == nil && redisWeeklySchedule != "" {
 		if json.Unmarshal([]byte(redisWeeklySchedule), &weeklySchedule) == nil {
 			log.Trace("Данные получены из Redis")
 			return weeklySchedule, nil
@@ -198,10 +219,16 @@ func (s *Schedule) GetScheduleByTeacher(teacher, date string) ([]model.Schedule,
 	for scheduleElementNum := 1; scheduleElementNum <= 7; scheduleElementNum++ {
 		scheduleDateElement := doc.Children().Find(fmt.Sprintf("div.raspcontent.m5 div:nth-child(%d) div.panel-heading.edu_today > h2", scheduleElementNum))
 
-		scheduleDate := scheduleDateElement.Text()
+		w := when.New(nil)
+		w.Add(ru.All...)
+		r, err := w.Parse(strings.Split(scheduleDateElement.Text(), ",")[0], time.Now())
+		if err != nil {
+			return nil, err
+		}
+
 		weeklySchedule = append(weeklySchedule, model.Schedule{
-			Date: scheduleDate,
-			Href: fmt.Sprintf("https://hmtpk.ru/ru/teachers/schedule/?teacher=%s&date_edu1c=%s&send=Показать#current", teacher, scheduleDate),
+			Date: scheduleDateElement.Text(),
+			Href: fmt.Sprintf("https://hmtpk.ru/ru/teachers/schedule/?teacher=%s&date_edu1c=%s&send=Показать#current", teacher, r.Time.Format("02.01.2006")),
 		})
 
 		lessonsElement := doc.Children().Find(fmt.Sprintf("div.raspcontent.m5 div:nth-child(%d) div.panel-body > table.table > tbody:nth-child(2)", scheduleElementNum))
@@ -257,7 +284,7 @@ func (s *Schedule) GetScheduleByTeacher(teacher, date string) ([]model.Schedule,
 	}
 
 	if marshal, err := json.Marshal(weeklySchedule); err == nil {
-		if err := s.r.Set(date+":"+teacher, string(marshal)); err != nil {
+		if err := s.r.Set(fmt.Sprintf("%d/%d", year, week)+":"+teacher, string(marshal)); err != nil {
 			log.Error(err)
 		} else {
 			log.Trace("Данные сохранены в Redis")
