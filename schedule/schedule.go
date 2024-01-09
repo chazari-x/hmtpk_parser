@@ -8,8 +8,6 @@ import (
 	"github.com/chazari-x/hmtpk_schedule/config"
 	"github.com/chazari-x/hmtpk_schedule/model"
 	"github.com/chazari-x/hmtpk_schedule/redis"
-	"github.com/olebedev/when"
-	"github.com/olebedev/when/rules/ru"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"regexp"
@@ -33,6 +31,38 @@ func NewSchedule(cfg *config.Schedule, r *redis.Redis) *Schedule {
 	}
 
 	return s
+}
+
+func getDate(date string) string {
+	d := strings.Split(date, " ")
+	switch d[1][:6] {
+	case "янв":
+		d[1] = "01"
+	case "фев":
+		d[1] = "02"
+	case "мар":
+		d[1] = "03"
+	case "апр":
+		d[1] = "04"
+	case "май":
+		d[1] = "05"
+	case "июн":
+		d[1] = "06"
+	case "июл":
+		d[1] = "07"
+	case "авг":
+		d[1] = "08"
+	case "сен":
+		d[1] = "09"
+	case "окт":
+		d[1] = "10"
+	case "ноя":
+		d[1] = "11"
+	case "дек":
+		d[1] = "12"
+	}
+
+	return strings.Join(d, ".")
 }
 
 func (s *Schedule) GetGroups() []string {
@@ -102,16 +132,11 @@ func (s *Schedule) GetScheduleByGroup(group, date string) ([]model.Schedule, err
 	for scheduleElementNum := 2; scheduleElementNum <= 8; scheduleElementNum++ {
 		scheduleDateElement := doc.Children().Find(fmt.Sprintf("div.raspcontent.m5 div:nth-child(%d) div.panel-heading.edu_today > h2", scheduleElementNum))
 
-		w := when.New(nil)
-		w.Add(ru.All...)
-		r, err := w.Parse(strings.Split(scheduleDateElement.Text(), ",")[0], time.Now())
-		if err != nil {
-			return nil, err
-		}
+		date = getDate(strings.Split(scheduleDateElement.Text(), ",")[0])
 
 		weeklySchedule = append(weeklySchedule, model.Schedule{
 			Date: scheduleDateElement.Text(),
-			Href: fmt.Sprintf("https://hmtpk.ru/ru/students/schedule/?group=%s&date_edu1c=%s&send=Показать#current", group, r.Time.Format("02.01.2006")),
+			Href: fmt.Sprintf("https://hmtpk.ru/ru/students/schedule/?group=%s&date_edu1c=%s&send=Показать#current", group, date),
 		})
 
 		lessonsElement := doc.Children().Find(fmt.Sprintf("div.raspcontent.m5 div:nth-child(%d) div.panel-body > #mobile-friendly > tbody:nth-child(2)", scheduleElementNum))
@@ -219,16 +244,11 @@ func (s *Schedule) GetScheduleByTeacher(teacher, date string) ([]model.Schedule,
 	for scheduleElementNum := 1; scheduleElementNum <= 7; scheduleElementNum++ {
 		scheduleDateElement := doc.Children().Find(fmt.Sprintf("div.raspcontent.m5 div:nth-child(%d) div.panel-heading.edu_today > h2", scheduleElementNum))
 
-		w := when.New(nil)
-		w.Add(ru.All...)
-		r, err := w.Parse(strings.Split(scheduleDateElement.Text(), ",")[0], time.Now())
-		if err != nil {
-			return nil, err
-		}
+		date = getDate(strings.Split(scheduleDateElement.Text(), ",")[0])
 
 		weeklySchedule = append(weeklySchedule, model.Schedule{
 			Date: scheduleDateElement.Text(),
-			Href: fmt.Sprintf("https://hmtpk.ru/ru/teachers/schedule/?teacher=%s&date_edu1c=%s&send=Показать#current", teacher, r.Time.Format("02.01.2006")),
+			Href: fmt.Sprintf("https://hmtpk.ru/ru/teachers/schedule/?teacher=%s&date_edu1c=%s&send=Показать#current", teacher, date),
 		})
 
 		lessonsElement := doc.Children().Find(fmt.Sprintf("div.raspcontent.m5 div:nth-child(%d) div.panel-body > table.table > tbody:nth-child(2)", scheduleElementNum))
