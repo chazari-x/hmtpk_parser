@@ -3,6 +3,7 @@ package model
 type Schedule struct {
 	Date    string   `json:"date"`
 	Lessons []Lesson `json:"lesson"`
+	Href    string   `json:"href"`
 }
 
 type Lesson struct {

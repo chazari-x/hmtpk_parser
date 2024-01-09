@@ -92,8 +92,11 @@ func (s *Schedule) GetScheduleByGroup(group, date string) ([]model.Schedule, err
 
 	for scheduleElementNum := 2; scheduleElementNum <= 8; scheduleElementNum++ {
 		scheduleDateElement := doc.Children().Find(fmt.Sprintf("div.raspcontent.m5 div:nth-child(%d) div.panel-heading.edu_today > h2", scheduleElementNum))
+
+		scheduleDate := scheduleDateElement.Text()
 		weeklySchedule = append(weeklySchedule, model.Schedule{
-			Date: scheduleDateElement.Text(),
+			Date: scheduleDate,
+			Href: fmt.Sprintf("https://hmtpk.ru/ru/students/schedule/?group=%s&date_edu1c=%s&send=Показать#current", group, scheduleDate),
 		})
 
 		lessonsElement := doc.Children().Find(fmt.Sprintf("div.raspcontent.m5 div:nth-child(%d) div.panel-body > #mobile-friendly > tbody:nth-child(2)", scheduleElementNum))
@@ -194,8 +197,11 @@ func (s *Schedule) GetScheduleByTeacher(teacher, date string) ([]model.Schedule,
 
 	for scheduleElementNum := 1; scheduleElementNum <= 7; scheduleElementNum++ {
 		scheduleDateElement := doc.Children().Find(fmt.Sprintf("div.raspcontent.m5 div:nth-child(%d) div.panel-heading.edu_today > h2", scheduleElementNum))
+
+		scheduleDate := scheduleDateElement.Text()
 		weeklySchedule = append(weeklySchedule, model.Schedule{
-			Date: scheduleDateElement.Text(),
+			Date: scheduleDate,
+			Href: fmt.Sprintf("https://hmtpk.ru/ru/teachers/schedule/?teacher=%s&date_edu1c=%s&send=Показать#current", teacher, scheduleDate),
 		})
 
 		lessonsElement := doc.Children().Find(fmt.Sprintf("div.raspcontent.m5 div:nth-child(%d) div.panel-body > table.table > tbody:nth-child(2)", scheduleElementNum))
