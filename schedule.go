@@ -1,102 +1,99 @@
-package schedule
+package hmtpk_schedule
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/PuerkitoBio/goquery"
-	"github.com/chazari-x/hmtpk_schedule/config"
-	"github.com/chazari-x/hmtpk_schedule/model"
-	"github.com/chazari-x/hmtpk_schedule/redis"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
+
+	"github.com/PuerkitoBio/goquery"
+	"github.com/chazari-x/hmtpk_schedule/storage"
+	"github.com/go-redis/redis/v8"
+	"github.com/sirupsen/logrus"
 )
 
-type Schedule struct {
-	cfg *config.Schedule
-	r   *redis.Redis
+type Controller struct {
+	r   *storage.Redis
+	log *logrus.Logger
 }
 
-var Groups map[string]int
+//type Config struct {
+//	Groups []struct {
+//		ID   int    `yaml:"id"`
+//		Name string `yaml:"name"`
+//	} `yaml:"groups"`
+//
+//	Teachers []struct {
+//		Name string `yaml:"name"`
+//	} `yaml:"teachers"`
+//}
 
-func NewSchedule(cfg *config.Schedule, r *redis.Redis) *Schedule {
-	s := &Schedule{cfg, r}
-	Groups = make(map[string]int)
-	for _, group := range cfg.Groups {
-		Groups[group.Name] = group.ID
-	}
+func NewController(client *redis.Client, logger *logrus.Logger) *Controller {
+	s := &Controller{ /*cfg, */ r: &storage.Redis{Redis: client}, log: logger}
+	//Groups = make(map[string]int)
+	//for _, group := range cfg.Groups {
+	//	Groups[group.Name] = group.ID
+	//}
 
 	return s
 }
 
-func getDate(date string) string {
-	d := strings.Split(date, " ")
-	switch d[1][:6] {
-	case "янв":
-		d[1] = "01"
-	case "фев":
-		d[1] = "02"
-	case "мар":
-		d[1] = "03"
-	case "апр":
-		d[1] = "04"
-	case "май":
-		d[1] = "05"
-	case "июн":
-		d[1] = "06"
-	case "июл":
-		d[1] = "07"
-	case "авг":
-		d[1] = "08"
-	case "сен":
-		d[1] = "09"
-	case "окт":
-		d[1] = "10"
-	case "ноя":
-		d[1] = "11"
-	case "дек":
-		d[1] = "12"
-	}
+//
+//var Groups map[string]int
+//
+//func (s *Controller) GetGroups() []string {
+//	var groups []string
+//
+//	for _, g := range s.cfg.Groups {
+//		groups = append(groups, g.Name)
+//	}
+//
+//	return groups
+//}
+//
+//func (s *Controller) GetGroup(groupName string) string {
+//	return strconv.Itoa(Groups[groupName])
+//}
+//
+//func (s *Controller) GetTeachers() []string {
+//	var teachers []string
+//
+//	for _, g := range s.cfg.Teachers {
+//		teachers = append(teachers, g.Name)
+//	}
+//
+//	return teachers
+//}
 
-	return strings.Join(d, ".")
+type Schedule struct {
+	Date    string   `json:"date"`
+	Lessons []Lesson `json:"lesson"`
+	Href    string   `json:"href"`
 }
 
-func (s *Schedule) GetGroups() []string {
-	var groups []string
-
-	for _, g := range s.cfg.Groups {
-		groups = append(groups, g.Name)
-	}
-
-	return groups
+type Lesson struct {
+	Num      string `json:"num"`
+	Time     string `json:"time"`
+	Name     string `json:"name"`
+	Room     string `json:"room"`
+	Location string `json:"location"`
+	Group    string `json:"group"`
+	Subgroup string `json:"subgroup"`
+	Teacher  string `json:"teacher"`
 }
 
-func (s *Schedule) GetGroup(groupName string) string {
-	return strconv.Itoa(Groups[groupName])
-}
+//func (s *Controller) GetScheduleByGroupName(group, date string) ([]Schedule, error) {
+//	return s.GetScheduleByGroup(s.GetGroup(group), date)
+//}
 
-func (s *Schedule) GetTeachers() []string {
-	var teachers []string
+// GetScheduleByGroup по идентификатору группы и дате получает расписание на неделю
+func (s *Controller) GetScheduleByGroup(group, date string) ([]Schedule, error) {
+	var weeklySchedule []Schedule
 
-	for _, g := range s.cfg.Teachers {
-		teachers = append(teachers, g.Name)
-	}
-
-	return teachers
-}
-
-func (s *Schedule) GetScheduleByGroupName(group, date string) ([]model.Schedule, error) {
-	return s.GetScheduleByGroup(s.GetGroup(group), date)
-}
-
-func (s *Schedule) GetScheduleByGroup(group, date string) ([]model.Schedule, error) {
-	var weeklySchedule []model.Schedule
-
-	log.Trace(group)
+	s.log.Trace(group)
 
 	d, err := time.Parse("02.01.2006", date)
 	if err != nil {
@@ -106,7 +103,7 @@ func (s *Schedule) GetScheduleByGroup(group, date string) ([]model.Schedule, err
 	year, week := d.ISOWeek()
 	if redisWeeklySchedule, err := s.r.Get(fmt.Sprintf("%d/%d", year, week) + ":" + group); err == nil && redisWeeklySchedule != "" {
 		if json.Unmarshal([]byte(redisWeeklySchedule), &weeklySchedule) == nil {
-			log.Trace("Данные получены из Redis")
+			s.log.Trace("Данные получены из redis")
 			return weeklySchedule, nil
 		}
 	}
@@ -134,15 +131,15 @@ func (s *Schedule) GetScheduleByGroup(group, date string) ([]model.Schedule, err
 
 		date = getDate(strings.Split(scheduleDateElement.Text(), ",")[0])
 
-		weeklySchedule = append(weeklySchedule, model.Schedule{
+		weeklySchedule = append(weeklySchedule, Schedule{
 			Date: scheduleDateElement.Text(),
 			Href: fmt.Sprintf("https://hmtpk.ru/ru/students/schedule/?group=%s&date_edu1c=%s&send=Показать#current", group, date),
 		})
 
 		lessonsElement := doc.Children().Find(fmt.Sprintf("div.raspcontent.m5 div:nth-child(%d) div.panel-body > #mobile-friendly > tbody:nth-child(2)", scheduleElementNum))
-		var lessons []model.Lesson
+		var lessons []Lesson
 		for lessonNum := 1; lessonNum < 14; lessonNum++ {
-			var lesson model.Lesson
+			var lesson Lesson
 			var exists bool
 			lessonElement := lessonsElement.Find(fmt.Sprintf("tr:nth-child(%d)", lessonNum))
 			for lessonAttributeNum := 1; lessonAttributeNum <= 5; lessonAttributeNum++ {
@@ -195,19 +192,20 @@ func (s *Schedule) GetScheduleByGroup(group, date string) ([]model.Schedule, err
 
 	if marshal, err := json.Marshal(weeklySchedule); err == nil {
 		if err = s.r.Set(fmt.Sprintf("%d/%d", year, week)+":"+group, string(marshal)); err != nil {
-			log.Error(err)
+			s.log.Error(err)
 		} else {
-			log.Trace("Данные сохранены в Redis")
+			s.log.Trace("Данные сохранены в redis")
 		}
 	}
 
 	return weeklySchedule, nil
 }
 
-func (s *Schedule) GetScheduleByTeacher(teacher, date string) ([]model.Schedule, error) {
-	var weeklySchedule []model.Schedule
+// GetScheduleByTeacher по ФИО преподавателя и дате получает расписание преподавателя
+func (s *Controller) GetScheduleByTeacher(teacher, date string) ([]Schedule, error) {
+	var weeklySchedule []Schedule
 
-	log.Trace(teacher)
+	s.log.Trace(teacher)
 
 	teacher = strings.ReplaceAll(teacher, " ", "+")
 	d, err := time.Parse("02.01.2006", date)
@@ -218,7 +216,7 @@ func (s *Schedule) GetScheduleByTeacher(teacher, date string) ([]model.Schedule,
 	year, week := d.ISOWeek()
 	if redisWeeklySchedule, err := s.r.Get(fmt.Sprintf("%d/%d", year, week) + ":" + teacher); err == nil && redisWeeklySchedule != "" {
 		if json.Unmarshal([]byte(redisWeeklySchedule), &weeklySchedule) == nil {
-			log.Trace("Данные получены из Redis")
+			s.log.Trace("Данные получены из redis")
 			return weeklySchedule, nil
 		}
 	}
@@ -246,15 +244,15 @@ func (s *Schedule) GetScheduleByTeacher(teacher, date string) ([]model.Schedule,
 
 		date = getDate(strings.Split(scheduleDateElement.Text(), ",")[0])
 
-		weeklySchedule = append(weeklySchedule, model.Schedule{
+		weeklySchedule = append(weeklySchedule, Schedule{
 			Date: scheduleDateElement.Text(),
 			Href: fmt.Sprintf("https://hmtpk.ru/ru/teachers/schedule/?teacher=%s&date_edu1c=%s&send=Показать#current", teacher, date),
 		})
 
 		lessonsElement := doc.Children().Find(fmt.Sprintf("div.raspcontent.m5 div:nth-child(%d) div.panel-body > table.table > tbody:nth-child(2)", scheduleElementNum))
-		var lessons []model.Lesson
+		var lessons []Lesson
 		for lessonNum := 1; lessonNum < 14; lessonNum++ {
-			var lesson model.Lesson
+			var lesson Lesson
 			lessonElement := lessonsElement.Find(fmt.Sprintf("tr:nth-child(%d)", lessonNum))
 			for lessonAttributeNum := 1; lessonAttributeNum <= 5; lessonAttributeNum++ {
 				lessonElementAttribute := lessonElement.Find(fmt.Sprintf("td:nth-child(%d)", lessonAttributeNum))
@@ -305,11 +303,43 @@ func (s *Schedule) GetScheduleByTeacher(teacher, date string) ([]model.Schedule,
 
 	if marshal, err := json.Marshal(weeklySchedule); err == nil {
 		if err := s.r.Set(fmt.Sprintf("%d/%d", year, week)+":"+teacher, string(marshal)); err != nil {
-			log.Error(err)
+			s.log.Error(err)
 		} else {
-			log.Trace("Данные сохранены в Redis")
+			s.log.Trace("Данные сохранены в redis")
 		}
 	}
 
 	return weeklySchedule, nil
+}
+
+func getDate(date string) string {
+	d := strings.Split(date, " ")
+	switch d[1][:6] {
+	case "янв":
+		d[1] = "01"
+	case "фев":
+		d[1] = "02"
+	case "мар":
+		d[1] = "03"
+	case "апр":
+		d[1] = "04"
+	case "май":
+		d[1] = "05"
+	case "июн":
+		d[1] = "06"
+	case "июл":
+		d[1] = "07"
+	case "авг":
+		d[1] = "08"
+	case "сен":
+		d[1] = "09"
+	case "окт":
+		d[1] = "10"
+	case "ноя":
+		d[1] = "11"
+	case "дек":
+		d[1] = "12"
+	}
+
+	return strings.Join(d, ".")
 }

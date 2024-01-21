@@ -1,4 +1,4 @@
-package schedule
+package hmtpk_schedule
 
 import "testing"
 
