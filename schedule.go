@@ -1,6 +1,7 @@
 package hmtpk_schedule
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -90,7 +91,48 @@ type Lesson struct {
 //}
 
 // GetScheduleByGroup по идентификатору группы и дате получает расписание на неделю
-func (s *Controller) GetScheduleByGroup(group, date string) ([]Schedule, error) {
+func (s *Controller) GetScheduleByGroup(group, date string, ctx context.Context) ([]Schedule, error) {
+	resCh := make(chan []Schedule, 1)
+	errCh := make(chan error, 1)
+	defer close(resCh)
+	defer close(errCh)
+
+	go func() {
+		schedule, err := s.getScheduleByGroup(group, date)
+		if err != nil {
+			select {
+			case _, ok := <-errCh:
+				if !ok {
+					return
+				}
+			default:
+				errCh <- err
+			}
+
+			return
+		}
+
+		select {
+		case _, ok := <-resCh:
+			if !ok {
+				return
+			}
+		default:
+			resCh <- schedule
+		}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return nil, context.Canceled
+	case res := <-resCh:
+		return res, nil
+	case err := <-errCh:
+		return nil, err
+	}
+}
+
+func (s *Controller) getScheduleByGroup(group, date string) ([]Schedule, error) {
 	var weeklySchedule []Schedule
 
 	s.log.Trace(group)
@@ -101,10 +143,12 @@ func (s *Controller) GetScheduleByGroup(group, date string) ([]Schedule, error) 
 	}
 
 	year, week := d.ISOWeek()
-	if redisWeeklySchedule, err := s.r.Get(fmt.Sprintf("%d/%d", year, week) + ":" + group); err == nil && redisWeeklySchedule != "" {
-		if json.Unmarshal([]byte(redisWeeklySchedule), &weeklySchedule) == nil {
-			s.log.Trace("Данные получены из redis")
-			return weeklySchedule, nil
+	if s.r != nil {
+		if redisWeeklySchedule, err := s.r.Get(fmt.Sprintf("%d/%d", year, week) + ":" + group); err == nil && redisWeeklySchedule != "" {
+			if json.Unmarshal([]byte(redisWeeklySchedule), &weeklySchedule) == nil {
+				s.log.Trace("Данные получены из redis")
+				return weeklySchedule, nil
+			}
 		}
 	}
 
@@ -190,11 +234,13 @@ func (s *Controller) GetScheduleByGroup(group, date string) ([]Schedule, error) 
 		weeklySchedule[len(weeklySchedule)-1].Lessons = lessons
 	}
 
-	if marshal, err := json.Marshal(weeklySchedule); err == nil {
-		if err = s.r.Set(fmt.Sprintf("%d/%d", year, week)+":"+group, string(marshal)); err != nil {
-			s.log.Error(err)
-		} else {
-			s.log.Trace("Данные сохранены в redis")
+	if s.r != nil {
+		if marshal, err := json.Marshal(weeklySchedule); err == nil {
+			if err = s.r.Set(fmt.Sprintf("%d/%d", year, week)+":"+group, string(marshal)); err != nil {
+				s.log.Error(err)
+			} else {
+				s.log.Trace("Данные сохранены в redis")
+			}
 		}
 	}
 
@@ -202,7 +248,48 @@ func (s *Controller) GetScheduleByGroup(group, date string) ([]Schedule, error) 
 }
 
 // GetScheduleByTeacher по ФИО преподавателя и дате получает расписание преподавателя
-func (s *Controller) GetScheduleByTeacher(teacher, date string) ([]Schedule, error) {
+func (s *Controller) GetScheduleByTeacher(teacher, date string, ctx context.Context) ([]Schedule, error) {
+	resCh := make(chan []Schedule, 1)
+	errCh := make(chan error, 1)
+	defer close(resCh)
+	defer close(errCh)
+
+	go func() {
+		schedule, err := s.getScheduleByTeacher(teacher, date)
+		if err != nil {
+			select {
+			case _, ok := <-errCh:
+				if !ok {
+					return
+				}
+			default:
+				errCh <- err
+			}
+
+			return
+		}
+
+		select {
+		case _, ok := <-resCh:
+			if !ok {
+				return
+			}
+		default:
+			resCh <- schedule
+		}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return nil, context.Canceled
+	case res := <-resCh:
+		return res, nil
+	case err := <-errCh:
+		return nil, err
+	}
+}
+
+func (s *Controller) getScheduleByTeacher(teacher, date string) ([]Schedule, error) {
 	var weeklySchedule []Schedule
 
 	s.log.Trace(teacher)
@@ -214,10 +301,12 @@ func (s *Controller) GetScheduleByTeacher(teacher, date string) ([]Schedule, err
 	}
 
 	year, week := d.ISOWeek()
-	if redisWeeklySchedule, err := s.r.Get(fmt.Sprintf("%d/%d", year, week) + ":" + teacher); err == nil && redisWeeklySchedule != "" {
-		if json.Unmarshal([]byte(redisWeeklySchedule), &weeklySchedule) == nil {
-			s.log.Trace("Данные получены из redis")
-			return weeklySchedule, nil
+	if s.r != nil {
+		if redisWeeklySchedule, err := s.r.Get(fmt.Sprintf("%d/%d", year, week) + ":" + teacher); err == nil && redisWeeklySchedule != "" {
+			if json.Unmarshal([]byte(redisWeeklySchedule), &weeklySchedule) == nil {
+				s.log.Trace("Данные получены из redis")
+				return weeklySchedule, nil
+			}
 		}
 	}
 
@@ -301,11 +390,13 @@ func (s *Controller) GetScheduleByTeacher(teacher, date string) ([]Schedule, err
 		weeklySchedule[len(weeklySchedule)-1].Lessons = lessons
 	}
 
-	if marshal, err := json.Marshal(weeklySchedule); err == nil {
-		if err := s.r.Set(fmt.Sprintf("%d/%d", year, week)+":"+teacher, string(marshal)); err != nil {
-			s.log.Error(err)
-		} else {
-			s.log.Trace("Данные сохранены в redis")
+	if s.r != nil {
+		if marshal, err := json.Marshal(weeklySchedule); err == nil {
+			if err := s.r.Set(fmt.Sprintf("%d/%d", year, week)+":"+teacher, string(marshal)); err != nil {
+				s.log.Error(err)
+			} else {
+				s.log.Trace("Данные сохранены в redis")
+			}
 		}
 	}
 
