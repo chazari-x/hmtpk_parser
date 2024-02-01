@@ -92,6 +92,10 @@ type Lesson struct {
 
 // GetScheduleByGroup по идентификатору группы и дате получает расписание на неделю
 func (s *Controller) GetScheduleByGroup(group, date string, ctx context.Context) ([]Schedule, error) {
+	if group == "0" || group == "" {
+		return nil, fmt.Errorf(http.StatusText(http.StatusBadRequest))
+	}
+
 	resCh := make(chan []Schedule, 1)
 	errCh := make(chan error, 1)
 	defer close(resCh)
@@ -249,6 +253,10 @@ func (s *Controller) getScheduleByGroup(group, date string) ([]Schedule, error) 
 
 // GetScheduleByTeacher по ФИО преподавателя и дате получает расписание преподавателя
 func (s *Controller) GetScheduleByTeacher(teacher, date string, ctx context.Context) ([]Schedule, error) {
+	if teacher == "0" || teacher == "" {
+		return nil, fmt.Errorf(http.StatusText(http.StatusBadRequest))
+	}
+
 	resCh := make(chan []Schedule, 1)
 	errCh := make(chan error, 1)
 	defer close(resCh)
