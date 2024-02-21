@@ -64,7 +64,7 @@ func TestController_GetScheduleByGroup(t *testing.T) {
 			log:  logrus.StandardLogger(),
 			args: args{
 				group: "114808",
-				date:  "25.01.2024",
+				date:  "21.02.2024",
 				ctx:   ctx,
 			},
 			noWant:  nil,
@@ -85,6 +85,8 @@ func TestController_GetScheduleByGroup(t *testing.T) {
 			}
 			if reflect.DeepEqual(got, tt.noWant) {
 				t.Errorf("GetScheduleByGroup() got = %v, noWant %v", got, tt.noWant)
+			} else {
+				t.Log(got[2].Lessons)
 			}
 		})
 	}
@@ -112,8 +114,8 @@ func TestController_GetScheduleByTeacher(t *testing.T) {
 			r:    nil,
 			log:  logrus.StandardLogger(),
 			args: args{
-				teacher: "Ярыгина",
-				date:    "25.01.2024",
+				teacher: "<>",
+				date:    "21.02.2024",
 				ctx:     ctx,
 			},
 			noWant:  nil,
@@ -133,6 +135,9 @@ func TestController_GetScheduleByTeacher(t *testing.T) {
 			}
 			if reflect.DeepEqual(got, tt.noWant) {
 				t.Errorf("GetScheduleByTeacher() got = %v, noWant %v", got, tt.noWant)
+			} else {
+				t.Log(len(got[2].Lessons))
+				t.Log(got[2].Lessons)
 			}
 		})
 	}

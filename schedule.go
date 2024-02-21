@@ -90,6 +90,10 @@ type Lesson struct {
 //	return s.GetScheduleByGroup(s.GetGroup(group), date)
 //}
 
+const (
+	numOfColumns = 5
+)
+
 // GetScheduleByGroup по идентификатору группы и дате получает расписание на неделю
 func (s *Controller) GetScheduleByGroup(group, date string, ctx context.Context) ([]Schedule, error) {
 	if group == "0" || group == "" {
@@ -174,7 +178,12 @@ func (s *Controller) getScheduleByGroup(group, date string) ([]Schedule, error) 
 		return nil, err
 	}
 
-	for scheduleElementNum := 2; scheduleElementNum <= 8; scheduleElementNum++ {
+	const (
+		firstDayNum = 2
+		lastDayNum  = 8
+	)
+
+	for scheduleElementNum := firstDayNum; scheduleElementNum <= lastDayNum; scheduleElementNum++ {
 		scheduleDateElement := doc.Children().Find(fmt.Sprintf("div.raspcontent.m5 div:nth-child(%d) div.panel-heading.edu_today > h2", scheduleElementNum))
 
 		date = getDate(strings.Split(scheduleDateElement.Text(), ",")[0])
@@ -186,45 +195,47 @@ func (s *Controller) getScheduleByGroup(group, date string) ([]Schedule, error) 
 
 		lessonsElement := doc.Children().Find(fmt.Sprintf("div.raspcontent.m5 div:nth-child(%d) div.panel-body > #mobile-friendly > tbody:nth-child(2)", scheduleElementNum))
 		var lessons []Lesson
-		for lessonNum := 1; lessonNum < 14; lessonNum++ {
+		for lessonNum := 1; lessonNum > 0; lessonNum++ {
 			var lesson Lesson
 			var exists bool
 			lessonElement := lessonsElement.Find(fmt.Sprintf("tr:nth-child(%d)", lessonNum))
-			for lessonAttributeNum := 1; lessonAttributeNum <= 5; lessonAttributeNum++ {
+			for lessonAttributeNum := 1; lessonAttributeNum <= numOfColumns; lessonAttributeNum++ {
 				lessonElementAttribute := lessonElement.Find(fmt.Sprintf("td:nth-child(%d)", lessonAttributeNum))
 				var value string
 				value, exists = lessonElementAttribute.Attr("data-title")
-				if exists {
-					text := lessonElementAttribute.Text()
-					switch value {
-					case "Номер урока":
-						lesson.Num = text
-					case "Время":
-						if lesson.Num == "" {
-							lesson.Num = lessons[len(lessons)-1].Num
-						}
-						lesson.Time = text
-					case "Название предмета":
-						if strings.HasSuffix(text, "(1)") || strings.HasSuffix(text, "(2)") {
-							switch text[len(text)-3:] {
-							case "(1)":
-								lesson.Subgroup = "1"
-							case "(2)":
-								lesson.Subgroup = "2"
-							}
-							lesson.Name = strings.TrimSpace(strings.TrimRight(strings.TrimRight(text, " (2)"), " (1)"))
-						} else {
-							lesson.Name = strings.TrimSpace(text)
-						}
-					case "Кабинет":
-						lesson.Room = text
-					case "Преподаватель":
-						lesson.Teacher = text
+				if !exists {
+					if lessonAttributeNum == numOfColumns {
+						exists = true
+					} else if lessonAttributeNum == 1 {
+						break
 					}
-				} else if lessonAttributeNum == 5 {
-					exists = true
-				} else if lessonAttributeNum == 1 {
-					break
+				}
+
+				text := lessonElementAttribute.Text()
+				switch value {
+				case "Номер урока":
+					lesson.Num = text
+				case "Время":
+					if lesson.Num == "" {
+						lesson.Num = lessons[len(lessons)-1].Num
+					}
+					lesson.Time = text
+				case "Название предмета":
+					if strings.HasSuffix(text, "(1)") || strings.HasSuffix(text, "(2)") {
+						switch text[len(text)-3:] {
+						case "(1)":
+							lesson.Subgroup = "1"
+						case "(2)":
+							lesson.Subgroup = "2"
+						}
+						lesson.Name = strings.TrimSpace(strings.TrimRight(strings.TrimRight(text, " (2)"), " (1)"))
+					} else {
+						lesson.Name = strings.TrimSpace(text)
+					}
+				case "Кабинет":
+					lesson.Room = text
+				case "Преподаватель":
+					lesson.Teacher = text
 				}
 			}
 
@@ -336,7 +347,12 @@ func (s *Controller) getScheduleByTeacher(teacher, date string) ([]Schedule, err
 		return nil, err
 	}
 
-	for scheduleElementNum := 1; scheduleElementNum <= 7; scheduleElementNum++ {
+	const (
+		firstDayNum = 1
+		lastDayNum  = 7
+	)
+
+	for scheduleElementNum := firstDayNum; scheduleElementNum <= lastDayNum; scheduleElementNum++ {
 		scheduleDateElement := doc.Children().Find(fmt.Sprintf("div.raspcontent.m5 div:nth-child(%d) div.panel-heading.edu_today > h2", scheduleElementNum))
 
 		date = getDate(strings.Split(scheduleDateElement.Text(), ",")[0])
@@ -348,14 +364,21 @@ func (s *Controller) getScheduleByTeacher(teacher, date string) ([]Schedule, err
 
 		lessonsElement := doc.Children().Find(fmt.Sprintf("div.raspcontent.m5 div:nth-child(%d) div.panel-body > table.table > tbody:nth-child(2)", scheduleElementNum))
 		var lessons []Lesson
-		for lessonNum := 1; lessonNum < 14; lessonNum++ {
+		for lessonNum := 1; lessonNum > 0; lessonNum++ {
 			var lesson Lesson
+			var exists bool
 			lessonElement := lessonsElement.Find(fmt.Sprintf("tr:nth-child(%d)", lessonNum))
-			for lessonAttributeNum := 1; lessonAttributeNum <= 5; lessonAttributeNum++ {
+			for lessonAttributeNum := 1; lessonAttributeNum <= numOfColumns; lessonAttributeNum++ {
 				lessonElementAttribute := lessonElement.Find(fmt.Sprintf("td:nth-child(%d)", lessonAttributeNum))
 				value := lessonElementAttribute.Text()
 				if value == "" {
+					if lessonAttributeNum == 1 {
+						exists = false
+					}
+
 					break
+				} else {
+					exists = true
 				}
 
 				value = strings.ReplaceAll(value, "\n", "")
@@ -390,8 +413,10 @@ func (s *Controller) getScheduleByTeacher(teacher, date string) ([]Schedule, err
 				}
 			}
 
-			if lesson.Num != "" {
+			if exists {
 				lessons = append(lessons, lesson)
+			} else {
+				break
 			}
 		}
 
