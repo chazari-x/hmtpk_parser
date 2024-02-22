@@ -6,7 +6,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chazari-x/hmtpk_schedule/model"
 	"github.com/chazari-x/hmtpk_schedule/storage"
+	"github.com/chazari-x/hmtpk_schedule/utils"
 	"github.com/sirupsen/logrus"
 )
 
@@ -34,7 +36,7 @@ func Test_getDate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getDate(tt.date); got != tt.want {
+			if got := utils.GetDate(tt.date); got != tt.want {
 				t.Errorf("getDate() = %v, want %v", got, tt.want)
 			}
 		})
@@ -55,7 +57,7 @@ func TestController_GetScheduleByGroup(t *testing.T) {
 		r       *storage.Redis
 		log     *logrus.Logger
 		args    args
-		noWant  []Schedule
+		noWant  []model.Schedule
 		wantErr bool
 	}{
 		{
@@ -64,7 +66,7 @@ func TestController_GetScheduleByGroup(t *testing.T) {
 			log:  logrus.StandardLogger(),
 			args: args{
 				group: "114808",
-				date:  "21.02.2024",
+				date:  "22.02.2024",
 				ctx:   ctx,
 			},
 			noWant:  nil,
@@ -74,11 +76,8 @@ func TestController_GetScheduleByGroup(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &Controller{
-				r:   tt.r,
-				log: tt.log,
-			}
-			got, err := s.GetScheduleByGroup(tt.args.group, tt.args.date, tt.args.ctx)
+			c := NewController(nil, tt.log)
+			got, err := c.GetScheduleByGroup(tt.args.group, tt.args.date, tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetScheduleByGroup() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -86,7 +85,7 @@ func TestController_GetScheduleByGroup(t *testing.T) {
 			if reflect.DeepEqual(got, tt.noWant) {
 				t.Errorf("GetScheduleByGroup() got = %v, noWant %v", got, tt.noWant)
 			} else {
-				t.Log(got[2].Lessons)
+				t.Log(got[3].Lessons)
 			}
 		})
 	}
@@ -106,7 +105,7 @@ func TestController_GetScheduleByTeacher(t *testing.T) {
 		r       *storage.Redis
 		log     *logrus.Logger
 		args    args
-		noWant  []Schedule
+		noWant  []model.Schedule
 		wantErr bool
 	}{
 		{
@@ -124,11 +123,8 @@ func TestController_GetScheduleByTeacher(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &Controller{
-				r:   tt.r,
-				log: tt.log,
-			}
-			got, err := s.GetScheduleByTeacher(tt.args.teacher, tt.args.date, tt.args.ctx)
+			c := NewController(nil, tt.log)
+			got, err := c.GetScheduleByTeacher(tt.args.teacher, tt.args.date, tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetScheduleByTeacher() error = %v, wantErr %v", err, tt.wantErr)
 				return
