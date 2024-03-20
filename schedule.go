@@ -2,8 +2,7 @@ package hmtpk_schedule
 
 import (
 	"context"
-	"fmt"
-	"net/http"
+	"errors"
 
 	"github.com/chazari-x/hmtpk_schedule/schedule"
 	"github.com/chazari-x/hmtpk_schedule/schedule/group"
@@ -41,9 +40,11 @@ func (c *Controller) GetScheduleByTeacher(teacher, date string, ctx context.Cont
 	return c.getSchedule(teacher, date, ctx, c.teacher)
 }
 
+var BadRequest = errors.New("bad request")
+
 func (c *Controller) getSchedule(name, date string, ctx context.Context, adapter schedule.Adapter) ([]Schedule, error) {
 	if name == "0" || name == "" {
-		return nil, fmt.Errorf(http.StatusText(http.StatusBadRequest))
+		return nil, BadRequest
 	}
 
 	return adapter.GetSchedule(name, date, ctx)
