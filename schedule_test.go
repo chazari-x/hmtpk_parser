@@ -182,13 +182,13 @@ func TestController_GetGroupValues(t *testing.T) {
 				group:   tt.fields.group,
 				teacher: tt.fields.teacher,
 			}
-			got, err := c.GetGroupValues(tt.args.ctx)
+			got, err := c.GetGroupOptions(tt.args.ctx)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GetGroupValues() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetGroupOptions() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if len(got) == 0 {
-				t.Errorf("GetGroupValues() got = %v, want not empty", got)
+				t.Errorf("GetGroupOptions() got = %v, want not empty", got)
 			} else {
 				t.Log(got)
 			}
@@ -237,13 +237,13 @@ func TestController_GetTeacherValues(t *testing.T) {
 				group:   tt.fields.group,
 				teacher: tt.fields.teacher,
 			}
-			got, err := c.GetTeacherValues(tt.args.ctx)
+			got, err := c.GetTeacherOptions(tt.args.ctx)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GetTeacherValues() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetTeacherOptions() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if len(got) == 0 {
-				t.Errorf("GetTeacherValues() got = %v, want not empty", got)
+				t.Errorf("GetTeacherOptions() got = %v, want not empty", got)
 			} else {
 				t.Log(got)
 			}

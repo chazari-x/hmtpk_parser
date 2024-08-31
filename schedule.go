@@ -40,13 +40,13 @@ func (c *Controller) GetScheduleByTeacher(teacher, date string, ctx context.Cont
 	return c.getSchedule(teacher, date, ctx, c.teacher)
 }
 
-// GetGroupValues получает список групп
-func (c *Controller) GetGroupValues(ctx context.Context) ([]model.Option, error) {
+// GetGroupOptions получает список групп
+func (c *Controller) GetGroupOptions(ctx context.Context) ([]model.Option, error) {
 	return c.group.GetOptions(ctx)
 }
 
-// GetTeacherValues получает список преподавателей
-func (c *Controller) GetTeacherValues(ctx context.Context) ([]model.Option, error) {
+// GetTeacherOptions получает список преподавателей
+func (c *Controller) GetTeacherOptions(ctx context.Context) ([]model.Option, error) {
 	return c.teacher.GetOptions(ctx)
 }
 
