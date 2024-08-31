@@ -11,7 +11,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/sirupsen/logrus"
 
-	. "github.com/chazari-x/hmtpk_schedule/model"
+	"github.com/chazari-x/hmtpk_schedule/model"
 )
 
 type Controller struct {
@@ -31,18 +31,28 @@ func NewController(client *redis.Client, logger *logrus.Logger) *Controller {
 }
 
 // GetScheduleByGroup по идентификатору группы и дате получает расписание на неделю
-func (c *Controller) GetScheduleByGroup(group, date string, ctx context.Context) ([]Schedule, error) {
+func (c *Controller) GetScheduleByGroup(group, date string, ctx context.Context) ([]model.Schedule, error) {
 	return c.getSchedule(group, date, ctx, c.group)
 }
 
 // GetScheduleByTeacher по ФИО преподавателя и дате получает расписание преподавателя
-func (c *Controller) GetScheduleByTeacher(teacher, date string, ctx context.Context) ([]Schedule, error) {
+func (c *Controller) GetScheduleByTeacher(teacher, date string, ctx context.Context) ([]model.Schedule, error) {
 	return c.getSchedule(teacher, date, ctx, c.teacher)
+}
+
+// GetGroupValues получает список групп
+func (c *Controller) GetGroupValues(ctx context.Context) ([]model.Option, error) {
+	return c.group.GetOptions(ctx)
+}
+
+// GetTeacherValues получает список преподавателей
+func (c *Controller) GetTeacherValues(ctx context.Context) ([]model.Option, error) {
+	return c.teacher.GetOptions(ctx)
 }
 
 var BadRequest = errors.New("bad request")
 
-func (c *Controller) getSchedule(name, date string, ctx context.Context, adapter schedule.Adapter) ([]Schedule, error) {
+func (c *Controller) getSchedule(name, date string, ctx context.Context, adapter schedule.Adapter) ([]model.Schedule, error) {
 	if name == "0" || name == "" {
 		return nil, BadRequest
 	}

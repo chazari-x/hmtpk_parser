@@ -32,10 +32,10 @@ const (
 	numOfColumns = 5
 )
 
-func (c *Controller) GetSchedule(name, date string, ctx context.Context) ([]model.Schedule, error) {
+func (c *Controller) GetSchedule(label, date string, ctx context.Context) ([]model.Schedule, error) {
 	var weeklySchedule []model.Schedule
 
-	c.log.Trace(name)
+	c.log.Trace(label)
 
 	d, err := time.Parse("02.01.2006", date)
 	if err != nil {
@@ -44,7 +44,7 @@ func (c *Controller) GetSchedule(name, date string, ctx context.Context) ([]mode
 
 	year, week := d.ISOWeek()
 	if utils.RedisIsNil(c.r) {
-		if redisWeeklySchedule, err := c.r.Get(fmt.Sprintf("%d/%d", year, week) + ":" + name); err == nil && redisWeeklySchedule != "" {
+		if redisWeeklySchedule, err := c.r.Get(fmt.Sprintf("%d/%d", year, week) + ":" + label); err == nil && redisWeeklySchedule != "" {
 			if json.Unmarshal([]byte(redisWeeklySchedule), &weeklySchedule) == nil {
 				c.log.Trace("Данные получены из redis")
 				return weeklySchedule, nil
@@ -52,7 +52,7 @@ func (c *Controller) GetSchedule(name, date string, ctx context.Context) ([]mode
 		}
 	}
 
-	href := fmt.Sprintf("https://hmtpk.ru/ru/students/schedule/?group=%s&date_edu1c=%s&send=Показать#current", name, date)
+	href := fmt.Sprintf("https://hmtpk.ru/ru/students/schedule/?group=%s&date_edu1c=%s&send=Показать#current", label, date)
 	request, err := http.NewRequestWithContext(ctx, "POST", href, nil)
 	if err != nil {
 		return nil, err
@@ -77,13 +77,13 @@ func (c *Controller) GetSchedule(name, date string, ctx context.Context) ([]mode
 	}
 
 	for scheduleElementNum := firstDayNum; scheduleElementNum <= lastDayNum; scheduleElementNum++ {
-		weeklySchedule = append(weeklySchedule, c.parseDay(doc, scheduleElementNum, name))
+		weeklySchedule = append(weeklySchedule, c.parseDay(doc, scheduleElementNum, label))
 	}
 
 	if utils.RedisIsNil(c.r) {
 		if c.r.Redis != nil {
 			if marshal, err := json.Marshal(weeklySchedule); err == nil {
-				if err = c.r.Set(fmt.Sprintf("%d/%d", year, week)+":"+name, string(marshal)); err != nil {
+				if err = c.r.Set(fmt.Sprintf("%d/%d", year, week)+":"+label, string(marshal)); err != nil {
 					c.log.Error(err)
 				} else {
 					c.log.Trace("Данные сохранены в redis")
@@ -93,6 +93,73 @@ func (c *Controller) GetSchedule(name, date string, ctx context.Context) ([]mode
 	}
 
 	return weeklySchedule, nil
+}
+
+const groupsKey = "groups"
+
+func (c *Controller) GetOptions(ctx context.Context) (options []model.Option, err error) {
+	if utils.RedisIsNil(c.r) {
+		var data string
+		if data, err = c.r.Get(groupsKey); err == nil && data != "" {
+			if json.Unmarshal([]byte(data), &options) == nil {
+				c.log.Trace("Данные получены из redis")
+				return
+			}
+		}
+	}
+
+	href := "https://hmtpk.ru/ru/students/schedule/"
+	request, err := http.NewRequestWithContext(ctx, "POST", href, nil)
+	if err != nil {
+		return
+	}
+
+	client := http.Client{}
+	resp, err := client.Do(request)
+	if err != nil {
+		return
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	if resp.StatusCode != 200 {
+		return nil, errors.New(fmt.Sprintf("Ошибка: %s", resp.Status))
+	}
+
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	options = c.parseOptions(doc)
+
+	if utils.RedisIsNil(c.r) {
+		if c.r.Redis != nil {
+			var marshal []byte
+			if marshal, err = json.Marshal(options); err == nil {
+				if err = c.r.Set(groupsKey, string(marshal)); err != nil {
+					c.log.Error(err)
+				} else {
+					c.log.Trace("Данные сохранены в redis")
+				}
+			}
+		}
+	}
+
+	return
+}
+
+func (c *Controller) parseOptions(doc *goquery.Document) (options []model.Option) {
+	elements := doc.Children().Find("#group > option[value]")
+	elements.Each(func(i int, s *goquery.Selection) {
+		label, exists := s.Attr("value")
+		if exists {
+			options = append(options, model.Option{Label: label, Value: s.Text()})
+		}
+	})
+
+	return
 }
 
 func (c *Controller) parseDay(doc *goquery.Document, scheduleElementNum int, name string) model.Schedule {

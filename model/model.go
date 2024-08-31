@@ -16,3 +16,8 @@ type Lesson struct {
 	Subgroup string `json:"subgroup"`
 	Teacher  string `json:"teacher"`
 }
+
+type Option struct {
+	Label string `json:"label"`
+	Value string `json:"value"`
+}

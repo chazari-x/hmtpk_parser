@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/chazari-x/hmtpk_schedule/model"
+	"github.com/chazari-x/hmtpk_schedule/schedule/group"
+	"github.com/chazari-x/hmtpk_schedule/schedule/teacher"
 	"github.com/chazari-x/hmtpk_schedule/storage"
 	"github.com/chazari-x/hmtpk_schedule/utils"
 	"github.com/sirupsen/logrus"
@@ -44,7 +46,7 @@ func Test_getDate(t *testing.T) {
 }
 
 func TestController_GetScheduleByGroup(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 
 	type args struct {
@@ -92,7 +94,7 @@ func TestController_GetScheduleByGroup(t *testing.T) {
 }
 
 func TestController_GetScheduleByTeacher(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 
 	type args struct {
@@ -134,6 +136,116 @@ func TestController_GetScheduleByTeacher(t *testing.T) {
 			} else {
 				t.Log(len(got[2].Lessons))
 				t.Log(got[2].Lessons)
+			}
+		})
+	}
+}
+
+func TestController_GetGroupValues(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	defer cancel()
+
+	type fields struct {
+		r       *storage.Redis
+		log     *logrus.Logger
+		group   *group.Controller
+		teacher *teacher.Controller
+	}
+	type args struct {
+		ctx context.Context
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "",
+			fields: fields{
+				r:       nil,
+				log:     logrus.StandardLogger(),
+				group:   group.NewController(nil, logrus.StandardLogger()),
+				teacher: teacher.NewController(nil, logrus.StandardLogger()),
+			},
+			args: args{
+				ctx: ctx,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := &Controller{
+				r:       tt.fields.r,
+				log:     tt.fields.log,
+				group:   tt.fields.group,
+				teacher: tt.fields.teacher,
+			}
+			got, err := c.GetGroupValues(tt.args.ctx)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetGroupValues() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if len(got) == 0 {
+				t.Errorf("GetGroupValues() got = %v, want not empty", got)
+			} else {
+				t.Log(got)
+			}
+		})
+	}
+}
+
+func TestController_GetTeacherValues(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	defer cancel()
+
+	type fields struct {
+		r       *storage.Redis
+		log     *logrus.Logger
+		group   *group.Controller
+		teacher *teacher.Controller
+	}
+	type args struct {
+		ctx context.Context
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "",
+			fields: fields{
+				r:       nil,
+				log:     logrus.StandardLogger(),
+				group:   group.NewController(nil, logrus.StandardLogger()),
+				teacher: teacher.NewController(nil, logrus.StandardLogger()),
+			},
+			args: args{
+				ctx: ctx,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := &Controller{
+				r:       tt.fields.r,
+				log:     tt.fields.log,
+				group:   tt.fields.group,
+				teacher: tt.fields.teacher,
+			}
+			got, err := c.GetTeacherValues(tt.args.ctx)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetTeacherValues() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if len(got) == 0 {
+				t.Errorf("GetTeacherValues() got = %v, want not empty", got)
+			} else {
+				t.Log(got)
 			}
 		})
 	}
