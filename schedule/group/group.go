@@ -153,9 +153,9 @@ func (c *Controller) GetOptions(ctx context.Context) (options []model.Option, er
 func (c *Controller) parseOptions(doc *goquery.Document) (options []model.Option) {
 	elements := doc.Children().Find("#group > option[value]")
 	elements.Each(func(i int, s *goquery.Selection) {
-		label, exists := s.Attr("value")
+		value, exists := s.Attr("value")
 		if exists {
-			options = append(options, model.Option{Label: label, Value: s.Text()})
+			options = append(options, model.Option{Label: s.Text(), Value: value})
 		}
 	})
 
