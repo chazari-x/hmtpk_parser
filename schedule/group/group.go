@@ -138,7 +138,7 @@ func (c *Controller) GetOptions(ctx context.Context) (options []model.Option, er
 		if c.r.Redis != nil {
 			var marshal []byte
 			if marshal, err = json.Marshal(options); err == nil {
-				if err = c.r.Set(groupsKey, string(marshal)); err != nil {
+				if err = c.r.Set(groupsKey, string(marshal), 60); err != nil {
 					c.log.Error(err)
 				} else {
 					c.log.Trace("Данные сохранены в redis")
