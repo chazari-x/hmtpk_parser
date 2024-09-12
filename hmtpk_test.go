@@ -1,16 +1,18 @@
-package hmtpk_schedule
+package hmtpk_parser
 
 import (
 	"context"
 	"reflect"
+	"strconv"
 	"testing"
 	"time"
 
-	"github.com/chazari-x/hmtpk_schedule/model"
-	"github.com/chazari-x/hmtpk_schedule/schedule/group"
-	"github.com/chazari-x/hmtpk_schedule/schedule/teacher"
-	"github.com/chazari-x/hmtpk_schedule/storage"
-	"github.com/chazari-x/hmtpk_schedule/utils"
+	"github.com/chazari-x/hmtpk_parser/announce"
+	"github.com/chazari-x/hmtpk_parser/model"
+	"github.com/chazari-x/hmtpk_parser/schedule/group"
+	"github.com/chazari-x/hmtpk_parser/schedule/teacher"
+	"github.com/chazari-x/hmtpk_parser/storage"
+	"github.com/chazari-x/hmtpk_parser/utils"
 	"github.com/sirupsen/logrus"
 )
 
@@ -248,5 +250,42 @@ func TestController_GetTeacherValues(t *testing.T) {
 				t.Log(got)
 			}
 		})
+	}
+}
+
+func TestController_GetAnnounces(t *testing.T) {
+	log := logrus.StandardLogger()
+	a := announce.NewAnnounce(log)
+
+	tests := []struct {
+		page    int
+		wantErr bool
+	}{
+		{
+			page:    1,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+		t.Run(strconv.Itoa(tt.page), func(t *testing.T) {
+			c := &Controller{
+				log:      log,
+				announce: a,
+			}
+			got, err := c.GetAnnounces(ctx, tt.page)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetAnnounces() error = %v, wantErr %v", err, tt.wantErr)
+				cancel()
+				return
+			}
+			if len(got) == 0 {
+				t.Errorf("GetAnnounces() got = %v, want not empty", got)
+			} else {
+				t.Log(got)
+			}
+		})
+
+		cancel()
 	}
 }

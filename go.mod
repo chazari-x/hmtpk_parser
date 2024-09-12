@@ -1,4 +1,4 @@
-module github.com/chazari-x/hmtpk_schedule
+module github.com/chazari-x/hmtpk_parser
 
 go 1.20
 

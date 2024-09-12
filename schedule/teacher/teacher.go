@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/chazari-x/hmtpk_schedule/model"
-	"github.com/chazari-x/hmtpk_schedule/storage"
-	"github.com/chazari-x/hmtpk_schedule/utils"
+	"github.com/chazari-x/hmtpk_parser/model"
+	"github.com/chazari-x/hmtpk_parser/storage"
+	"github.com/chazari-x/hmtpk_parser/utils"
 	"github.com/go-redis/redis/v8"
 	"github.com/sirupsen/logrus"
 )
@@ -31,6 +31,8 @@ const (
 	firstDayNum  = 1
 	lastDayNum   = firstDayNum + 6
 	numOfColumns = 5
+
+	href = "https://hmtpk.ru/ru/teachers/schedule"
 )
 
 func (c *Controller) GetSchedule(label, date string, ctx context.Context) ([]model.Schedule, error) {
@@ -54,7 +56,7 @@ func (c *Controller) GetSchedule(label, date string, ctx context.Context) ([]mod
 		}
 	}
 
-	href := fmt.Sprintf("https://hmtpk.ru/ru/teachers/schedule/?teacher=%s&date_edu1c=%s&send=Показать#current", label, date)
+	href := fmt.Sprintf("%s/?teacher=%s&date_edu1c=%s&send=Показать#current", href, label, date)
 	request, err := http.NewRequestWithContext(ctx, "POST", href, nil)
 	if err != nil {
 		return nil, err
@@ -108,7 +110,6 @@ func (c *Controller) GetOptions(ctx context.Context) (options []model.Option, er
 		}
 	}
 
-	href := "https://hmtpk.ru/ru/teachers/schedule/"
 	request, err := http.NewRequestWithContext(ctx, "POST", href, nil)
 	if err != nil {
 		return
@@ -168,7 +169,7 @@ func (c *Controller) parseDay(doc *goquery.Document, scheduleElementNum int, nam
 	date := utils.GetDate(strings.Split(scheduleDateElement.Text(), ",")[0])
 	var schedule = model.Schedule{
 		Date: scheduleDateElement.Text(),
-		Href: fmt.Sprintf("https://hmtpk.ru/ru/teachers/schedule/?teacher=%s&date_edu1c=%s&send=Показать#current", name, date),
+		Href: fmt.Sprintf("%s/?teacher=%s&date_edu1c=%s&send=Показать#current", href, name, date),
 	}
 
 	lessonsElement := doc.Children().Find(fmt.Sprintf("div.raspcontent.m5 div:nth-child(%d) div.panel-body > table.table > tbody:nth-child(2)", scheduleElementNum))

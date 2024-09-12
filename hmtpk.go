@@ -1,32 +1,35 @@
-package hmtpk_schedule
+package hmtpk_parser
 
 import (
 	"context"
 	"errors"
 
-	"github.com/chazari-x/hmtpk_schedule/schedule"
-	"github.com/chazari-x/hmtpk_schedule/schedule/group"
-	"github.com/chazari-x/hmtpk_schedule/schedule/teacher"
-	"github.com/chazari-x/hmtpk_schedule/storage"
+	"github.com/chazari-x/hmtpk_parser/announce"
+	"github.com/chazari-x/hmtpk_parser/schedule"
+	"github.com/chazari-x/hmtpk_parser/schedule/group"
+	"github.com/chazari-x/hmtpk_parser/schedule/teacher"
+	"github.com/chazari-x/hmtpk_parser/storage"
 	"github.com/go-redis/redis/v8"
 	"github.com/sirupsen/logrus"
 
-	"github.com/chazari-x/hmtpk_schedule/model"
+	"github.com/chazari-x/hmtpk_parser/model"
 )
 
 type Controller struct {
-	r       *storage.Redis
-	log     *logrus.Logger
-	group   *group.Controller
-	teacher *teacher.Controller
+	r        *storage.Redis
+	log      *logrus.Logger
+	group    *group.Controller
+	teacher  *teacher.Controller
+	announce *announce.Announce
 }
 
 func NewController(client *redis.Client, logger *logrus.Logger) *Controller {
 	return &Controller{
-		r:       &storage.Redis{Redis: client},
-		log:     logger,
-		group:   group.NewController(client, logger),
-		teacher: teacher.NewController(client, logger),
+		r:        &storage.Redis{Redis: client},
+		log:      logger,
+		group:    group.NewController(client, logger),
+		teacher:  teacher.NewController(client, logger),
+		announce: announce.NewAnnounce(logger),
 	}
 }
 
@@ -58,4 +61,13 @@ func (c *Controller) getSchedule(name, date string, ctx context.Context, adapter
 	}
 
 	return adapter.GetSchedule(name, date, ctx)
+}
+
+// GetAnnounces получает html блок с объявлениями
+func (c *Controller) GetAnnounces(ctx context.Context, page int) ([]model.Announce, error) {
+	if page < 1 {
+		return nil, BadRequest
+	}
+
+	return c.announce.GetAnnounces(ctx, page)
 }

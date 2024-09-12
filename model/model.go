@@ -21,3 +21,8 @@ type Option struct {
 	Label string `json:"label"`
 	Value string `json:"value"`
 }
+
+type Announce struct {
+	Path string `json:"path"`
+	Html string `json:"html"`
+}
