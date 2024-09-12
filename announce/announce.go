@@ -81,14 +81,17 @@ func (a *Announce) parseAnnounces(doc *goquery.Document) []model.Announce {
 }
 
 func (a *Announce) parseAnnounce(s *goquery.Selection) (announce model.Announce, err error) {
-	announce.Html, err = s.Html()
+	announce.Date, err = a.searchDate(s)
 	if err != nil {
 		return
 	}
 
-	announce.Html = a.removeExtraSpaces(announce.Html)
+	announce.Path, announce.Title, err = a.searchAnnounceTitleAndPath(s)
+	if err != nil {
+		return
+	}
 
-	announce.Path, err = a.searchAnnouncePath(s)
+	announce.Body, err = a.searchBody(s)
 	if err != nil {
 		return
 	}
@@ -96,13 +99,39 @@ func (a *Announce) parseAnnounce(s *goquery.Selection) (announce model.Announce,
 	return
 }
 
-func (a *Announce) searchAnnouncePath(s *goquery.Selection) (string, error) {
-	path, exists := s.Find("h3 > a").First().Attr("href")
+func (a *Announce) searchAnnounceTitleAndPath(s *goquery.Selection) (string, string, error) {
+	element := s.Find("h3 > a").First()
+
+	path, exists := element.Attr("href")
 	if !exists {
-		return "", errors.New("path not found")
+		return "", "", errors.New("path not found")
 	}
 
-	return strings.TrimSpace(path), nil
+	title := strings.ReplaceAll(element.Text(), "\n", " ")
+
+	return strings.TrimSpace(path), strings.TrimSpace(title), nil
+}
+
+func (a *Announce) searchBody(s *goquery.Selection) (string, error) {
+	body, err := s.Find("div.c-text-secondary").Html()
+	if err != nil {
+		return "", err
+	}
+
+	if body == "" {
+		return "", errors.New("body not found")
+	}
+
+	return a.removeExtraSpaces(body), nil
+}
+
+func (a *Announce) searchDate(s *goquery.Selection) (string, error) {
+	date := s.Find("p.c-text-secondary").First().Text()
+	if date == "" {
+		return "", errors.New("date not found")
+	}
+
+	return strings.TrimSpace(date), nil
 }
 
 // Функция для удаления лишних пробелов между HTML-блоками

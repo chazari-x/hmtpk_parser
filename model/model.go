@@ -23,6 +23,8 @@ type Option struct {
 }
 
 type Announce struct {
-	Path string `json:"path"`
-	Html string `json:"html"`
+	Path  string `json:"path"`
+	Date  string `json:"date"`
+	Title string `json:"title"`
+	Body  string `json:"body"`
 }
