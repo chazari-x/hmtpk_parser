@@ -110,7 +110,7 @@ func (c *Controller) GetOptions(ctx context.Context) (options []model.Option, er
 		}
 	}
 
-	href := fmt.Sprintf("%s?bxrand=%d", href, time.Now().Unix())
+	href := fmt.Sprintf("%s/?bxrand=%d", href, time.Now().Unix())
 	request, err := http.NewRequestWithContext(ctx, "POST", href, nil)
 	if err != nil {
 		return
