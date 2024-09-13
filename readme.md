@@ -1,7 +1,7 @@
 # Парсер ХМТПК
-[![Go Reference](https://pkg.go.dev/badge/github.com/chazari-x/hmtpk_schedule/v2.svg)](https://pkg.go.dev/github.com/chazari-x/hmtpk_schedule/v2)
-[![Go Report Card](https://goreportcard.com/badge/github.com/chazari-x/hmtpk_schedule)](https://goreportcard.com/report/github.com/chazari-x/hmtpk_schedule)
-![License](https://img.shields.io/github/license/chazari-x/hmtpk_schedule)
+[![Go Reference](https://pkg.go.dev/badge/github.com/chazari-x/hmtpk_schedule/v2.svg)](https://pkg.go.dev/github.com/chazari-x/hmtpk_parser/v2)
+[![Go Report Card](https://goreportcard.com/badge/github.com/chazari-x/hmtpk_schedule)](https://goreportcard.com/report/github.com/chazari-x/hmtpk_parser)
+![License](https://img.shields.io/github/license/chazari-x/hmtpk_parser)
 [![Application](https://img.shields.io/badge/VK-Mini-App)](https://vk.com/hmtpk_schedule)
 [![Group](https://img.shields.io/badge/VK-Subscripe-blue)](https://vk.com/hmtpk_schedule_club)
 
@@ -32,7 +32,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/chazari-x/hmtpk_schedule/v2"
+	"github.com/chazari-x/hmtpk_parser/v2"
 	"github.com/go-redis/redis/v8"
 	"github.com/sirupsen/logrus"
 )
