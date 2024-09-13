@@ -6,12 +6,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chazari-x/hmtpk_parser/announce"
-	"github.com/chazari-x/hmtpk_parser/model"
-	"github.com/chazari-x/hmtpk_parser/schedule/group"
-	"github.com/chazari-x/hmtpk_parser/schedule/teacher"
-	"github.com/chazari-x/hmtpk_parser/storage"
-	"github.com/chazari-x/hmtpk_parser/utils"
+	"github.com/chazari-x/hmtpk_parser/v2/announce"
+	"github.com/chazari-x/hmtpk_parser/v2/model"
+	"github.com/chazari-x/hmtpk_parser/v2/schedule/group"
+	"github.com/chazari-x/hmtpk_parser/v2/schedule/teacher"
+	"github.com/chazari-x/hmtpk_parser/v2/storage"
+	"github.com/chazari-x/hmtpk_parser/v2/utils"
 	"github.com/sirupsen/logrus"
 )
 

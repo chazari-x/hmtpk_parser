@@ -3,7 +3,7 @@ package schedule
 import (
 	"context"
 
-	"github.com/chazari-x/hmtpk_parser/model"
+	"github.com/chazari-x/hmtpk_parser/v2/model"
 )
 
 type Adapter interface {

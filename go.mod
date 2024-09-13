@@ -1,4 +1,4 @@
-module github.com/chazari-x/hmtpk_parser
+module github.com/chazari-x/hmtpk_parser/v2
 
 go 1.20
 

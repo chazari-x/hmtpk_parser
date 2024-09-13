@@ -3,7 +3,7 @@ package utils
 import (
 	"strings"
 
-	"github.com/chazari-x/hmtpk_parser/storage"
+	"github.com/chazari-x/hmtpk_parser/v2/storage"
 )
 
 func GetDate(date string) string {

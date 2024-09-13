@@ -11,9 +11,9 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/chazari-x/hmtpk_parser/model"
-	"github.com/chazari-x/hmtpk_parser/storage"
-	"github.com/chazari-x/hmtpk_parser/utils"
+	"github.com/chazari-x/hmtpk_parser/v2/model"
+	"github.com/chazari-x/hmtpk_parser/v2/storage"
+	"github.com/chazari-x/hmtpk_parser/v2/utils"
 	"github.com/sirupsen/logrus"
 )
 

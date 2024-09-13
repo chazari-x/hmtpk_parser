@@ -4,15 +4,15 @@ import (
 	"context"
 	"errors"
 
-	"github.com/chazari-x/hmtpk_parser/announce"
-	"github.com/chazari-x/hmtpk_parser/schedule"
-	"github.com/chazari-x/hmtpk_parser/schedule/group"
-	"github.com/chazari-x/hmtpk_parser/schedule/teacher"
-	"github.com/chazari-x/hmtpk_parser/storage"
+	"github.com/chazari-x/hmtpk_parser/v2/announce"
+	"github.com/chazari-x/hmtpk_parser/v2/schedule"
+	"github.com/chazari-x/hmtpk_parser/v2/schedule/group"
+	"github.com/chazari-x/hmtpk_parser/v2/schedule/teacher"
+	"github.com/chazari-x/hmtpk_parser/v2/storage"
 	"github.com/go-redis/redis/v8"
 	"github.com/sirupsen/logrus"
 
-	"github.com/chazari-x/hmtpk_parser/model"
+	"github.com/chazari-x/hmtpk_parser/v2/model"
 )
 
 type Controller struct {
