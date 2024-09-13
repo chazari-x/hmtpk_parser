@@ -1,12 +1,25 @@
-# ХМТПК Расписание
+# Парсер ХМТПК
+[![Go Reference](https://pkg.go.dev/badge/github.com/chazari-x/hmtpk_schedule/v2.svg)](https://pkg.go.dev/github.com/chazari-x/hmtpk_schedule/v2)
+[![Go Report Card](https://goreportcard.com/badge/github.com/chazari-x/hmtpk_schedule)](https://goreportcard.com/report/github.com/chazari-x/hmtpk_schedule)
+![License](https://img.shields.io/github/license/chazari-x/hmtpk_schedule)
+[![Application](https://img.shields.io/badge/VK-Mini-App)](https://vk.com/hmtpk_schedule)
+[![Group](https://img.shields.io/badge/VK-Subscripe-blue)](https://vk.com/hmtpk_schedule_club)
 
-Этот пакет предоставляет простой способ получения расписания занятий с сайта [Ханты-Мансийский технолого-педагогический колледж (ХМТПК)](https://hmtpk.ru/ru/).
+Этот пакет предоставляет простой способ получения данных с сайта [Ханты-Мансийский технолого-педагогический колледж (ХМТПК)](https://hmtpk.ru/ru/).
+
+## Получаемые данные
+Пакет позволяет получить следующие данные:
+- Расписание занятий для группы
+- Расписание занятий для преподавателя
+- Список групп
+- Список преподавателей
+- Объявления
 
 ## Установка
 Для установки пакета, выполните следующую команду:
 
 ```bash
-go get github.com/chazari-x/hmtpk_schedule
+go get github.com/chazari-x/hmtpk_schedule/v2
 ```
 
 ## Использование
@@ -19,7 +32,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/chazari-x/hmtpk_schedule"
+	"github.com/chazari-x/hmtpk_schedule/v2"
 	"github.com/go-redis/redis/v8"
 	"github.com/sirupsen/logrus"
 )
