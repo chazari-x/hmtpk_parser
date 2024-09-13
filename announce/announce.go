@@ -58,13 +58,11 @@ func (a *Announce) GetAnnounces(ctx context.Context, page int) (announces model.
 	}
 
 	if utils.RedisIsNil(a.r) {
-		if a.r.Redis != nil {
-			if marshal, err := json.Marshal(announces); err == nil {
-				if err = a.r.Set(fmt.Sprintf("announce?page=%d", page), string(marshal), 60); err != nil {
-					a.log.Error(err)
-				} else {
-					a.log.Trace("announces сохранены в redis")
-				}
+		if marshal, err := json.Marshal(announces); err == nil {
+			if err = a.r.Set(fmt.Sprintf("announce?page=%d", page), string(marshal), 60); err != nil {
+				a.log.Error(err)
+			} else {
+				a.log.Trace("announces сохранены в redis")
 			}
 		}
 	}

@@ -103,7 +103,7 @@ func (c *Controller) GetOptions(ctx context.Context) (options []model.Option, er
 	if utils.RedisIsNil(c.r) {
 		var data string
 		if data, err = c.r.Get(groupsKey); err == nil && data != "" {
-			if json.Unmarshal([]byte(data), &options) == nil {
+			if json.Unmarshal([]byte(data), &options) == nil && len(options) != 0 {
 				c.log.Trace("Данные получены из redis")
 				return
 			}
@@ -135,15 +135,13 @@ func (c *Controller) GetOptions(ctx context.Context) (options []model.Option, er
 
 	options = c.parseOptions(doc)
 
-	if utils.RedisIsNil(c.r) {
-		if c.r.Redis != nil {
-			var marshal []byte
-			if marshal, err = json.Marshal(options); err == nil {
-				if err = c.r.Set(groupsKey, string(marshal), 60); err != nil {
-					c.log.Error(err)
-				} else {
-					c.log.Trace("Данные сохранены в redis")
-				}
+	if utils.RedisIsNil(c.r) && len(options) != 0 {
+		var marshal []byte
+		if marshal, err = json.Marshal(options); err == nil {
+			if err = c.r.Set(groupsKey, string(marshal), 60); err != nil {
+				c.log.Error(err)
+			} else {
+				c.log.Trace("Данные сохранены в redis")
 			}
 		}
 	}
