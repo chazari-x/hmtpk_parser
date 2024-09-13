@@ -64,9 +64,9 @@ func (c *Controller) getSchedule(name, date string, ctx context.Context, adapter
 }
 
 // GetAnnounces получает html блок с объявлениями
-func (c *Controller) GetAnnounces(ctx context.Context, page int) ([]model.Announce, error) {
+func (c *Controller) GetAnnounces(ctx context.Context, page int) (model.Announces, error) {
 	if page < 1 {
-		return nil, BadRequest
+		return model.Announces{}, BadRequest
 	}
 
 	return c.announce.GetAnnounces(ctx, page)

@@ -3,7 +3,6 @@ package hmtpk_parser
 import (
 	"context"
 	"reflect"
-	"strconv"
 	"testing"
 	"time"
 
@@ -258,17 +257,29 @@ func TestController_GetAnnounces(t *testing.T) {
 	a := announce.NewAnnounce(log)
 
 	tests := []struct {
+		name    string
 		page    int
 		wantErr bool
 	}{
 		{
+			name:    "1",
 			page:    1,
+			wantErr: false,
+		},
+		{
+			name:    "69",
+			page:    69,
+			wantErr: false,
+		},
+		{
+			name:    "70",
+			page:    70,
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-		t.Run(strconv.Itoa(tt.page), func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			c := &Controller{
 				log:      log,
 				announce: a,
@@ -279,7 +290,7 @@ func TestController_GetAnnounces(t *testing.T) {
 				cancel()
 				return
 			}
-			if len(got) == 0 {
+			if len(got.Announces) == 0 {
 				t.Errorf("GetAnnounces() got = %v, want not empty", got)
 			} else {
 				t.Log(got)

@@ -2,20 +2,25 @@ package announce
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/chazari-x/hmtpk_parser/model"
+	"github.com/chazari-x/hmtpk_parser/storage"
+	"github.com/chazari-x/hmtpk_parser/utils"
 	"github.com/sirupsen/logrus"
 )
 
 type Announce struct {
 	log *logrus.Logger
 	re  *regexp.Regexp
+	r   *storage.Redis
 }
 
 func NewAnnounce(logger *logrus.Logger) *Announce {
@@ -30,13 +35,41 @@ const (
 )
 
 // GetAnnounces получает блок с объявлениями с сайта hmtpk.ru и возвращает его как html строку
-func (a *Announce) GetAnnounces(ctx context.Context, page int) ([]model.Announce, error) {
-	doc, err := a.getDocument(ctx, page)
-	if err != nil {
-		return nil, err
+func (a *Announce) GetAnnounces(ctx context.Context, page int) (announces model.Announces, err error) {
+	if utils.RedisIsNil(a.r) {
+		if redisData, err := a.r.Get(fmt.Sprintf("announce?page=%d", page)); err == nil && redisData != "" {
+			if json.Unmarshal([]byte(redisData), &announces) == nil {
+				a.log.Trace("announces получены из redis")
+				return announces, nil
+			}
+		}
 	}
 
-	return a.parseAnnounces(doc), nil
+	doc, err := a.getDocument(ctx, page)
+	if err != nil {
+		return
+	}
+
+	announces.Announces = a.parseAnnounces(doc)
+
+	announces.LastPage, err = a.searchLastPage(doc)
+	if err != nil {
+		return
+	}
+
+	if utils.RedisIsNil(a.r) {
+		if a.r.Redis != nil {
+			if marshal, err := json.Marshal(announces); err == nil {
+				if err = a.r.Set(fmt.Sprintf("announce?page=%d", page), string(marshal), 60); err != nil {
+					a.log.Error(err)
+				} else {
+					a.log.Trace("announces сохранены в redis")
+				}
+			}
+		}
+	}
+
+	return
 }
 
 // getDocument получает html страницу с сайта hmtpk.ru
@@ -138,4 +171,30 @@ func (a *Announce) searchDate(s *goquery.Selection) (string, error) {
 func (a *Announce) removeExtraSpaces(html string) string {
 	cleanedHTML := a.re.ReplaceAllString(html, " ")
 	return strings.TrimSpace(cleanedHTML)
+}
+
+func (a *Announce) searchLastPage(doc *goquery.Document) (int, error) {
+	elements := doc.Find("main div.sf-viewbox.position-relative > div:last-child > *")
+
+	if elements.Length() == 0 {
+		return 0, errors.New("elements not found")
+	}
+
+	lastElement := elements.Last()
+
+	if lastElement.Is("span") {
+		page, err := strconv.Atoi(lastElement.Text())
+		if err != nil {
+			return 0, err
+		}
+
+		return page, nil
+	}
+
+	page, err := strconv.Atoi(lastElement.Prev().Text())
+	if err != nil {
+		return 0, err
+	}
+
+	return page, nil
 }

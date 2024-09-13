@@ -22,6 +22,11 @@ type Option struct {
 	Value string `json:"value"`
 }
 
+type Announces struct {
+	Announces []Announce `json:"announces"`
+	LastPage  int        `json:"last_page"`
+}
+
 type Announce struct {
 	Path  string `json:"path"`
 	Date  string `json:"date"`
