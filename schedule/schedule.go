@@ -7,6 +7,6 @@ import (
 )
 
 type Adapter interface {
-	GetSchedule(valueLabel, date string, ctx context.Context) ([]model.Schedule, error)
+	GetSchedule(value, date string, ctx context.Context) ([]model.Schedule, error)
 	GetOptions(ctx context.Context) ([]model.Option, error)
 }

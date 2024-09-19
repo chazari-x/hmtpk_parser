@@ -34,10 +34,10 @@ const (
 	href = "https://hmtpk.ru/ru/students/schedule"
 )
 
-func (c *Controller) GetSchedule(label, date string, ctx context.Context) ([]model.Schedule, error) {
+func (c *Controller) GetSchedule(value, date string, ctx context.Context) ([]model.Schedule, error) {
 	var weeklySchedule []model.Schedule
 
-	c.log.Trace(label)
+	c.log.Trace(value)
 
 	d, err := time.Parse("02.01.2006", date)
 	if err != nil {
@@ -46,7 +46,7 @@ func (c *Controller) GetSchedule(label, date string, ctx context.Context) ([]mod
 
 	year, week := d.ISOWeek()
 	if utils.RedisIsNil(c.r) {
-		if redisWeeklySchedule, err := c.r.Get(fmt.Sprintf("%d/%d", year, week) + ":" + label); err == nil && redisWeeklySchedule != "" {
+		if redisWeeklySchedule, err := c.r.Get(fmt.Sprintf("%d/%d", year, week) + ":" + value); err == nil && redisWeeklySchedule != "" {
 			if json.Unmarshal([]byte(redisWeeklySchedule), &weeklySchedule) == nil {
 				c.log.Trace("Данные получены из redis")
 				return weeklySchedule, nil
@@ -54,7 +54,7 @@ func (c *Controller) GetSchedule(label, date string, ctx context.Context) ([]mod
 		}
 	}
 
-	href := fmt.Sprintf("%s/?group=%s&date_edu1c=%s&send=Показать#current", href, label, date)
+	href := fmt.Sprintf("%s/?group=%s&date_edu1c=%s&send=Показать#current", href, value, date)
 	request, err := http.NewRequestWithContext(ctx, "POST", href, nil)
 	if err != nil {
 		return nil, err
@@ -79,13 +79,13 @@ func (c *Controller) GetSchedule(label, date string, ctx context.Context) ([]mod
 	}
 
 	for scheduleElementNum := firstDayNum; scheduleElementNum <= lastDayNum; scheduleElementNum++ {
-		weeklySchedule = append(weeklySchedule, c.parseDay(doc, scheduleElementNum, label))
+		weeklySchedule = append(weeklySchedule, c.parseDay(doc, scheduleElementNum, value))
 	}
 
 	if utils.RedisIsNil(c.r) {
 		if c.r.Redis != nil {
 			if marshal, err := json.Marshal(weeklySchedule); err == nil {
-				if err = c.r.Set(fmt.Sprintf("%d/%d", year, week)+":"+label, string(marshal)); err != nil {
+				if err = c.r.Set(fmt.Sprintf("%d/%d", year, week)+":"+value, string(marshal)); err != nil {
 					c.log.Error(err)
 				} else {
 					c.log.Trace("Данные сохранены в redis")
