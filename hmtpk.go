@@ -2,9 +2,9 @@ package hmtpk_parser
 
 import (
 	"context"
-	"errors"
 
 	"github.com/chazari-x/hmtpk_parser/v2/announce"
+	"github.com/chazari-x/hmtpk_parser/v2/errors"
 	"github.com/chazari-x/hmtpk_parser/v2/schedule"
 	"github.com/chazari-x/hmtpk_parser/v2/schedule/group"
 	"github.com/chazari-x/hmtpk_parser/v2/schedule/teacher"
@@ -53,20 +53,18 @@ func (c *Controller) GetTeacherOptions(ctx context.Context) ([]model.Option, err
 	return c.teacher.GetOptions(ctx)
 }
 
-var BadRequest = errors.New("bad request")
-
 func (c *Controller) getSchedule(name, date string, ctx context.Context, adapter schedule.Adapter) ([]model.Schedule, error) {
 	if name == "0" || name == "" {
-		return nil, BadRequest
+		return nil, errors.ErrorBadRequest
 	}
 
 	return adapter.GetSchedule(name, date, ctx)
 }
 
-// GetAnnounces получает html блок с объявлениями
+// GetAnnounces получает блок с объявлениями
 func (c *Controller) GetAnnounces(ctx context.Context, page int) (model.Announces, error) {
 	if page < 1 {
-		return model.Announces{}, BadRequest
+		return model.Announces{}, errors.ErrorBadRequest
 	}
 
 	return c.announce.GetAnnounces(ctx, page)
