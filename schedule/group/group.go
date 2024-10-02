@@ -70,7 +70,7 @@ func (c *Controller) GetSchedule(value, date string, ctx context.Context) ([]mod
 	}()
 
 	if resp.StatusCode != 200 {
-		return nil, errors.New(resp.Status)
+		return nil, errors.New(fmt.Sprintf("bad response status: %s", resp.Status))
 	}
 
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
@@ -126,7 +126,7 @@ func (c *Controller) GetOptions(ctx context.Context) (options []model.Option, er
 	}()
 
 	if resp.StatusCode != 200 {
-		return nil, errors.New(resp.Status)
+		return nil, errors.New(fmt.Sprintf("bad response status: %s", resp.Status))
 	}
 
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
