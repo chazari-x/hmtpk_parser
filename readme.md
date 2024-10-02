@@ -67,7 +67,7 @@ func groupScheduleExample(controller *hmtpk.Controller) {
   }
   
   // Получение расписания для группы
-  groupSchedule, err := controller.GetScheduleByGroup(groups[0].Value, "20.03.2024", context.Background())
+  groupSchedule, err := controller.GetScheduleByGroup(context.Background(), groups[0].Value, "20.03.2024")
   if err != nil {
     fmt.Println("Ошибка при получении расписания для группы:", err)
     return
@@ -86,7 +86,7 @@ func teacherScheduleExample(controller *hmtpk.Controller) {
   }
   
   // Получение расписания для преподавателя
-  teacherSchedule, err := controller.GetScheduleByTeacher(teachers[0].Value, "20.03.2024", context.Background())
+  teacherSchedule, err := controller.GetScheduleByTeacher(context.Background(), teachers[0].Value, "20.03.2024")
   if err != nil {
     fmt.Println("Ошибка при получении расписания для преподавателя:", err)
     return
