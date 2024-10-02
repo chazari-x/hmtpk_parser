@@ -35,7 +35,7 @@ const (
 	href = "https://hmtpk.ru/ru/teachers/schedule"
 )
 
-func (c *Controller) GetSchedule(value, date string, ctx context.Context) ([]model.Schedule, error) {
+func (c *Controller) GetSchedule(ctx context.Context, value, date string) ([]model.Schedule, error) {
 	var weeklySchedule []model.Schedule
 
 	c.log.Trace(value)

@@ -34,13 +34,13 @@ func NewController(client *redis.Client, logger *logrus.Logger) *Controller {
 }
 
 // GetScheduleByGroup по идентификатору группы и дате получает расписание на неделю
-func (c *Controller) GetScheduleByGroup(group, date string, ctx context.Context) ([]model.Schedule, error) {
-	return c.getSchedule(group, date, ctx, c.group)
+func (c *Controller) GetScheduleByGroup(ctx context.Context, group, date string) ([]model.Schedule, error) {
+	return c.getSchedule(ctx, group, date, c.group)
 }
 
 // GetScheduleByTeacher по ФИО преподавателя и дате получает расписание преподавателя
-func (c *Controller) GetScheduleByTeacher(teacher, date string, ctx context.Context) ([]model.Schedule, error) {
-	return c.getSchedule(teacher, date, ctx, c.teacher)
+func (c *Controller) GetScheduleByTeacher(ctx context.Context, teacher, date string) ([]model.Schedule, error) {
+	return c.getSchedule(ctx, teacher, date, c.teacher)
 }
 
 // GetGroupOptions получает список групп
@@ -53,12 +53,12 @@ func (c *Controller) GetTeacherOptions(ctx context.Context) ([]model.Option, err
 	return c.teacher.GetOptions(ctx)
 }
 
-func (c *Controller) getSchedule(name, date string, ctx context.Context, adapter schedule.Adapter) ([]model.Schedule, error) {
+func (c *Controller) getSchedule(ctx context.Context, name, date string, adapter schedule.Adapter) ([]model.Schedule, error) {
 	if name == "0" || name == "" {
 		return nil, errors.ErrorBadRequest
 	}
 
-	return adapter.GetSchedule(name, date, ctx)
+	return adapter.GetSchedule(ctx, name, date)
 }
 
 // GetAnnounces получает блок с объявлениями
