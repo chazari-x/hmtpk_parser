@@ -38,8 +38,6 @@ const (
 func (c *Controller) GetSchedule(ctx context.Context, value, date string) ([]model.Schedule, error) {
 	var weeklySchedule []model.Schedule
 
-	c.log.Trace(value)
-
 	value = strings.ReplaceAll(value, " ", "+")
 	d, err := time.Parse("02.01.2006", date)
 	if err != nil {
@@ -50,7 +48,6 @@ func (c *Controller) GetSchedule(ctx context.Context, value, date string) ([]mod
 	if utils.RedisIsNil(c.r) {
 		if redisWeeklySchedule, err := c.r.Get(fmt.Sprintf("%d/%d", year, week) + ":" + value); err == nil && redisWeeklySchedule != "" {
 			if json.Unmarshal([]byte(redisWeeklySchedule), &weeklySchedule) == nil {
-				c.log.Trace("Данные получены из redis")
 				return weeklySchedule, nil
 			}
 		}
@@ -88,8 +85,6 @@ func (c *Controller) GetSchedule(ctx context.Context, value, date string) ([]mod
 		if marshal, err := json.Marshal(weeklySchedule); err == nil {
 			if err := c.r.Set(fmt.Sprintf("%d/%d", year, week)+":"+value, string(marshal)); err != nil {
 				c.log.Error(err)
-			} else {
-				c.log.Trace("Данные сохранены в redis")
 			}
 		}
 	}
@@ -104,7 +99,6 @@ func (c *Controller) GetOptions(ctx context.Context) (options []model.Option, er
 		var data string
 		if data, err = c.r.Get(teachersKey); err == nil && data != "" {
 			if json.Unmarshal([]byte(data), &options) == nil && len(options) != 0 {
-				c.log.Trace("Данные получены из redis")
 				return
 			}
 		}
@@ -141,8 +135,6 @@ func (c *Controller) GetOptions(ctx context.Context) (options []model.Option, er
 		if marshal, err = json.Marshal(options); err == nil {
 			if err = c.r.Set(teachersKey, string(marshal), 60); err != nil {
 				c.log.Error(err)
-			} else {
-				c.log.Trace("Данные сохранены в redis")
 			}
 		}
 	}
