@@ -66,7 +66,7 @@ func (c *Controller) GetSchedule(ctx context.Context, value, date string) ([]mod
 		_ = resp.Body.Close()
 	}()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusInternalServerError {
 		return nil, fmt.Errorf("%w: %s", errors.ErrorBadResponse, resp.Status)
 	}
 
@@ -76,6 +76,12 @@ func (c *Controller) GetSchedule(ctx context.Context, value, date string) ([]mod
 	}
 
 	for scheduleElementNum := firstDayNum; scheduleElementNum <= lastDayNum; scheduleElementNum++ {
+		// The site sometimes returns HTTP 500 with a valid schedule. Validate
+		// every expected day before accepting or caching that response.
+		heading := doc.Find(fmt.Sprintf("div.raspcontent.m5 div:nth-child(%d) div.panel-heading.edu_today > h2", scheduleElementNum))
+		if heading.Length() != 1 || utils.GetDate(strings.Split(heading.Text(), ",")[0]) == "" {
+			return nil, fmt.Errorf("%w: %s: missing or invalid schedule day %d", errors.ErrorBadResponse, resp.Status, scheduleElementNum-firstDayNum+1)
+		}
 		weeklySchedule = append(weeklySchedule, c.parseDay(doc, scheduleElementNum, value))
 	}
 
@@ -119,7 +125,7 @@ func (c *Controller) GetOptions(ctx context.Context) (options []model.Option, er
 		_ = resp.Body.Close()
 	}()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusInternalServerError {
 		return nil, fmt.Errorf("%w: %s", errors.ErrorBadResponse, resp.Status)
 	}
 
@@ -129,6 +135,9 @@ func (c *Controller) GetOptions(ctx context.Context) (options []model.Option, er
 	}
 
 	options = c.parseOptions(doc)
+	if len(options) == 0 {
+		return nil, fmt.Errorf("%w: %s: missing schedule options", errors.ErrorBadResponse, resp.Status)
+	}
 
 	if utils.RedisIsNil(c.r) && len(options) != 0 {
 		var marshal []byte
@@ -146,7 +155,7 @@ func (c *Controller) parseOptions(doc *goquery.Document) (options []model.Option
 	elements := doc.Children().Find("#group > option[value]")
 	elements.Each(func(i int, s *goquery.Selection) {
 		value, exists := s.Attr("value")
-		if exists {
+		if exists && strings.TrimSpace(value) != "" && strings.TrimSpace(s.Text()) != "" {
 			options = append(options, model.Option{Label: s.Text(), Value: value})
 		}
 	})

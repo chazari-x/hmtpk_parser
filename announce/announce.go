@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
+	parserErrors "github.com/chazari-x/hmtpk_parser/v2/errors"
 	"github.com/chazari-x/hmtpk_parser/v2/model"
 	"github.com/chazari-x/hmtpk_parser/v2/storage"
 	"github.com/chazari-x/hmtpk_parser/v2/utils"
@@ -50,10 +51,13 @@ func (a *Announce) GetAnnounces(ctx context.Context, page int) (announces model.
 	}
 
 	announces.Announces = a.parseAnnounces(doc)
+	if len(announces.Announces) == 0 || len(announces.Announces) != doc.Find(announcesSelector).First().Find("div.iblock-list-item-text.p-3").Length() {
+		return model.Announces{}, fmt.Errorf("%w: missing or invalid announcements", parserErrors.ErrorBadResponse)
+	}
 
 	announces.LastPage, err = a.searchLastPage(doc)
 	if err != nil {
-		return
+		return model.Announces{}, fmt.Errorf("%w: invalid announcement pagination: %v", parserErrors.ErrorBadResponse, err)
 	}
 
 	if utils.RedisIsNil(a.r) {
@@ -84,15 +88,19 @@ func (a *Announce) getDocument(ctx context.Context, page int) (*goquery.Document
 		_ = resp.Body.Close()
 	}()
 
-	if resp.StatusCode != 200 {
-		return nil, errors.New(fmt.Sprintf("Ошибка: %s", resp.Status))
+	// HTTP 500 can still contain the complete page; GetAnnounces validates
+	// the parsed entries and pagination before accepting or caching it.
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusInternalServerError {
+		return nil, fmt.Errorf("%w: %s", parserErrors.ErrorBadResponse, resp.Status)
 	}
 
 	return goquery.NewDocumentFromReader(resp.Body)
 }
 
+const announcesSelector = "section.sf-pagewrap-area.overflow-hidden.d-flex.flex-col.justify-content-start > div > section > main > section > div > div.row"
+
 func (a *Announce) parseAnnounces(doc *goquery.Document) []model.Announce {
-	announcesBlock := doc.Find("section.sf-pagewrap-area.overflow-hidden.d-flex.flex-col.justify-content-start > div > section > main > section > div > div.row").First()
+	announcesBlock := doc.Find(announcesSelector).First()
 
 	announces := make([]model.Announce, 0, 10)
 	announcesBlock.Find("div.iblock-list-item-text.p-3").Each(func(i int, s *goquery.Selection) {

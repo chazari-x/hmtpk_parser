@@ -80,7 +80,7 @@ func TestController_GetScheduleByGroup(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := NewController(nil, tt.log)
-			got, err := c.GetScheduleByGroup(tt.args.group, tt.args.date, tt.args.ctx)
+			got, err := c.GetScheduleByGroup(tt.args.ctx, tt.args.group, tt.args.date)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetScheduleByGroup() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -127,7 +127,7 @@ func TestController_GetScheduleByTeacher(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := NewController(nil, tt.log)
-			got, err := c.GetScheduleByTeacher(tt.args.teacher, tt.args.date, tt.args.ctx)
+			got, err := c.GetScheduleByTeacher(tt.args.ctx, tt.args.teacher, tt.args.date)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetScheduleByTeacher() error = %v, wantErr %v", err, tt.wantErr)
 				return

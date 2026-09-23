@@ -2,12 +2,16 @@ package utils
 
 import (
 	"strings"
+	"time"
 
 	"github.com/chazari-x/hmtpk_parser/v2/storage"
 )
 
 func GetDate(date string) string {
-	d := strings.Split(date, " ")
+	d := strings.Fields(date)
+	if len(d) != 3 || len(d[1]) < 6 {
+		return ""
+	}
 	switch d[1][:6] {
 	case "янв":
 		d[1] = "01"
@@ -17,7 +21,7 @@ func GetDate(date string) string {
 		d[1] = "03"
 	case "апр":
 		d[1] = "04"
-	case "май":
+	case "май", "мая":
 		d[1] = "05"
 	case "июн":
 		d[1] = "06"
@@ -33,9 +37,15 @@ func GetDate(date string) string {
 		d[1] = "11"
 	case "дек":
 		d[1] = "12"
+	default:
+		return ""
 	}
 
-	return strings.Join(d, ".")
+	result := strings.Join(d, ".")
+	if _, err := time.Parse("2.01.2006", result); err != nil {
+		return ""
+	}
+	return result
 }
 
 func RedisIsNil(redis *storage.Redis) bool {
